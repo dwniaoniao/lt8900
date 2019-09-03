@@ -69,7 +69,7 @@ bool receivePackets(){
     unsigned int r = 0;
     while(true){
         r = SPI_ReadReg(48);
-        if((r & 0x20 >> 5))
+        if((r & 0x40) >> 6)
             break;
     }
     Serial.println("Packets received.");
