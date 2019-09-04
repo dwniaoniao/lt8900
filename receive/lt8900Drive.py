@@ -6,13 +6,11 @@ GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
 
 RSTPin = 23
-CSPin = 24
 
 TXCHANNEL = 0
 RXCHANNEL = 0
 
-GPIO.setup((RSTPin, CSPin), GPIO.OUT, initial=GPIO.LOW)
-GPIO.output(CSPin, GPIO.HIGH)
+GPIO.setup(RSTPin, GPIO.OUT, initial=GPIO.LOW)
 
 bus = 0
 device = 0
@@ -21,21 +19,15 @@ spi.open(bus, device)
 spi.max_speed_hz = 1000000
 spi.mode = 0b01
 spi.cshigh = True
-spi.threewire = True
 
 def SPI_WriteReg(addr, h, l):
-    GPIO.output(CSPin, GPIO.LOW)
     spi.writebytes([addr, h, l])
-    GPIO.output(CSPin, GPIO.HIGH)
 
 def SPI_ReadReg(addr):
-    GPIO.output(CSPin, GPIO.LOW)
     spi.writebytes([addr | 0x80])
-    l = spi.readbytes(2)
-    GPIO.output(CSPin, GPIO.HIGH)
-    print(l)
-    r = l[0] << 8 | l[1]
-    return r
+    # l = spi.readbytes(2)
+    l = spi.xfer2([0x00,0x00])
+    return l
 
 def setTXChannel(channel):
     SPI_WriteReg(7, 0x01, channel)
@@ -60,12 +52,12 @@ def sendPackets(length, packets):
         
     setTXChannel(TXCHANNEL)
     while True:
-        r = SPI_ReadReg(48)
-        if (r & 0x40) >> 6:
+        l = SPI_ReadReg(48)
+        if (l[1] & 0x40) >> 6:
             break
     print("Packets sent success.")
-    r = SPI_ReadReg(52)
-    if not r & 0x3fff:
+    l = SPI_ReadReg(52)
+    if not l[0] & 0x3f and l[1] & 0xff:
         print("ACK received.")
         return True
     return False
@@ -75,23 +67,23 @@ def receivePackets():
     SPI_WriteReg(52, 0x00, 0x80)
     setRXChannel(RXCHANNEL)
     while True:
-        r = SPI_ReadReg(48)
-        if (r & 0x40) >> 6:
+        l = SPI_ReadReg(48)
+        if (l[1] & 0x40) >> 6:
             break
     print("Packets received.")
-    r = SPI_ReadReg(50)
-    RBUFF.append(r & 0x0f)
-    length = r >> 8
+    l = SPI_ReadReg(50)
+    RBUFF.append(l[1])
+    length = l[0]
     length -= 1 
     while length:
         length -= 2
-        r = SPI_ReadReg(50)
-        RBUFF.append(r >> 8)
+        l = SPI_ReadReg(50)
+        RBUFF.append(l[0])
         if length >= 0:
-            RBUFF.append(r & 0x0f)
+            RBUFF.append(l[1])
 
-    r = SPI_ReadReg(48)
-    if not r >> 15:
+    l = SPI_ReadReg(48)
+    if not l[0] >> 7:
         print("CRC OK.")
         return RBUFF
     return None
@@ -136,9 +128,9 @@ def SPI_Init():
     SPI_WriteReg(42, 0xfd, 0xb0)
     SPI_WriteReg(43, 0x00, 0x0f)
 
-    r = SPI_ReadReg(40)
-    print(r)
-    if r == 0x2102:
+    l = SPI_ReadReg(40)
+    print(l)
+    if l[0] == 0x21 and l[1] == 0x02:
         print("Initial success.")
 
 
