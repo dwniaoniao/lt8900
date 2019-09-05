@@ -57,7 +57,7 @@ def sendPackets(length, packets):
             break
     print("Packets sent success.")
     l = SPI_ReadReg(52)
-    if not l[0] & 0x3f and l[1] & 0xff:
+    if not (l[0] & 0x3f and l[1] & 0xff):
         print("ACK received.")
         return True
     return False
@@ -66,16 +66,17 @@ def receivePackets():
     RBUFF = []
     SPI_WriteReg(52, 0x00, 0x80)
     setRXChannel(RXCHANNEL)
-    while True:
-        l = SPI_ReadReg(48)
-        if l[1] & 0x40:
-            break
+    l = SPI_ReadReg(48)
+    if not l[1] & 0x40:                 # pkt_flag
+        return None
     print("Packets received.")
-#     if not l[0] & 0x80:                # test CRC
-#         print("CRC correct.")
-#     else:
-#         print("CRC error.")
-#         return False
+
+    if not l[0] & 0x80:                # test CRC
+        print("CRC correct.")
+    else:
+        print("CRC error.")
+        return None
+
     l = SPI_ReadReg(50)
     RBUFF.append(l[1])
     length = l[0]
@@ -88,12 +89,8 @@ def receivePackets():
         if length >= 0:
             RBUFF.append(l[1])
 
-    l = SPI_ReadReg(48)
-    if not l[0] & 0x80:
-        print("CRC OK.")
-        print("Received packets = ", RBUFF)
-        return RBUFF
-    return None
+    print("receivePackets = ", RBUFF)
+    return RBUFF 
 
 def SPI_Init():
     GPIO.output(RSTPin, GPIO.LOW)
@@ -147,5 +144,8 @@ if __name__ == "__main__":
     sleep(3)
 
     while True:
-        receivePackets()
-        sendPackets(4, p)
+        p = receivePackets()
+        if p:
+            print("receivePacketsLength = ", len(p))
+            print("Packets = ", p)
+            

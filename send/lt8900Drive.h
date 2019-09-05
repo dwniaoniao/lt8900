@@ -67,18 +67,18 @@ unsigned int receivePackets(){
     SPI_WriteReg(52, 0x00, 0x80);   // clear RX_FIFO
     setRXChannel(RXCHANNEL);
     unsigned int r = 0;
-    while(true){
-        r = SPI_ReadReg(48);
-        if(r & 0x40)
-            break;
-    }
+    r = SPI_ReadReg(48);            // pkt_flag
+    if(r & 0x40 == 0)
+        return 0;
     Serial.println("Packets received.");
-//     if(r & 0x80 == 0){              // test CRC
-//         Serial.println("CRC correct.");
-//     }else{
-//         Serial.println("CRC error.");
-//         return 0;
-//     }
+
+    if(r & 0x8000){                 // test CRC
+        Serial.println("CRC error."); 
+        return 0;
+    }else{
+        Serial.println("CRC correct.");
+    }
+
     unsigned char length, lengthTemp;
     r = SPI_ReadReg(50);
     RBUFF[0] = r & 0x0f;
@@ -98,13 +98,7 @@ unsigned int receivePackets(){
         i += 2;
     }
     
-    r = SPI_ReadReg(48);
-    if(r & 0x80 == 0){
-        Serial.println("CRC correct.");
-        return lengthTemp;
-    }
-    Serial.println("CRC error.");
-    return 0;
+    return lengthTemp;
 }
 
 void SPI_Init(){
