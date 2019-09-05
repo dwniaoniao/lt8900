@@ -131,7 +131,7 @@ def SPI_Init():
     SPI_WriteReg(39, 0x03, 0x80)
 
     SPI_WriteReg(40, 0x21, 0x02)
-    SPI_WriteReg(41, 0xb0, 0x00)
+    SPI_WriteReg(41, 0xb8, 0x00)        # Auto ACK is on
     SPI_WriteReg(42, 0xfd, 0xb0)
     SPI_WriteReg(43, 0x00, 0x0f)
 
