@@ -53,7 +53,7 @@ def sendPackets(length, packets):
     setTXChannel(TXCHANNEL)
     while True:
         l = SPI_ReadReg(48)
-        if (l[1] & 0x40) >> 6:
+        if l[1] & 0x40:
             break
     print("Packets sent success.")
     l = SPI_ReadReg(52)
@@ -68,12 +68,18 @@ def receivePackets():
     setRXChannel(RXCHANNEL)
     while True:
         l = SPI_ReadReg(48)
-        if (l[1] & 0x40) >> 6:
+        if l[1] & 0x40:
             break
     print("Packets received.")
+#     if not l[0] & 0x80:                # test CRC
+#         print("CRC correct.")
+#     else:
+#         print("CRC error.")
+#         return False
     l = SPI_ReadReg(50)
     RBUFF.append(l[1])
     length = l[0]
+    print("Packets length: %d" % length)
     length -= 1 
     while length:
         length -= 2
@@ -83,8 +89,9 @@ def receivePackets():
             RBUFF.append(l[1])
 
     l = SPI_ReadReg(48)
-    if not l[0] >> 7:
+    if not l[0] & 0x80:
         print("CRC OK.")
+        print("Received packets = ", RBUFF)
         return RBUFF
     return None
 

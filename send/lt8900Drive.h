@@ -51,7 +51,7 @@ bool sendPackets(int length, unsigned char* packets){
     unsigned int r = 0;
     while(true){                   // reg48[6], pkt_flag
         r = SPI_ReadReg(48);
-        if((r & 0x40) >> 6)
+        if(r & 0x40)
             break;
     }
     Serial.println("Packets sent success.");
@@ -63,20 +63,29 @@ bool sendPackets(int length, unsigned char* packets){
     return false;
 }
 
-bool receivePackets(){
+unsigned int receivePackets(){
     SPI_WriteReg(52, 0x00, 0x80);   // clear RX_FIFO
     setRXChannel(RXCHANNEL);
     unsigned int r = 0;
     while(true){
         r = SPI_ReadReg(48);
-        if((r & 0x40) >> 6)
+        if(r & 0x40)
             break;
     }
     Serial.println("Packets received.");
-    unsigned char length;
+//     if(r & 0x80 == 0){              // test CRC
+//         Serial.println("CRC correct.");
+//     }else{
+//         Serial.println("CRC error.");
+//         return 0;
+//     }
+    unsigned char length, lengthTemp;
     r = SPI_ReadReg(50);
     RBUFF[0] = r & 0x0f;
     length = r >> 8;
+    lengthTemp = length;
+    Serial.println("Packets length: ");
+    Serial.println(length);
     length--;
     unsigned char i = 1;
     while(length){
@@ -90,11 +99,12 @@ bool receivePackets(){
     }
     
     r = SPI_ReadReg(48);
-    if((r >> 15) == 0){
-        Serial.println("CRC OK.");
-        return true;
+    if(r & 0x80 == 0){
+        Serial.println("CRC correct.");
+        return lengthTemp;
     }
-    return false;
+    Serial.println("CRC error.");
+    return 0;
 }
 
 void SPI_Init(){
