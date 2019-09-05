@@ -35,7 +35,11 @@ def setTXChannel(channel):
 def setRXChannel(channel):
     SPI_WriteReg(7, 0x00, (0x80 | channel))
 
+def turnOffTRMode():
+    SPI_WriteReg(7, 0x00, 0x00)
+    
 def sendPackets(length, packets):
+    turnOffTRMode()
     if length < 1 or length > 255:
         return False
     SPI_WriteReg(52, 0x80, 0x00)
@@ -63,11 +67,13 @@ def sendPackets(length, packets):
     return False
 
 def receivePackets():
+    turnOffTRMode()
     RBUFF = []
     SPI_WriteReg(52, 0x00, 0x80)
     setRXChannel(RXCHANNEL)
     l = SPI_ReadReg(48)
     if not l[1] & 0x40:                 # pkt_flag
+        turnOffTRMode()
         return None
     print("Packets received.")
 
@@ -75,6 +81,7 @@ def receivePackets():
         print("CRC correct.")
     else:
         print("CRC error.")
+        turnOffTRMode()
         return None
 
     l = SPI_ReadReg(50)
@@ -89,6 +96,7 @@ def receivePackets():
         if length >= 0:
             RBUFF.append(l[1])
 
+    turnOffTRMode()
     print("receivePackets = ", RBUFF)
     return RBUFF 
 

@@ -32,7 +32,12 @@ void setRXChannel(unsigned char channel){
     SPI_WriteReg(7, 0x00, (0x80 | channel));
 }
 
+void turnOffTRMode(){                       // turn of send and receive mode
+    SPI_WriteReg(7, 0x00, 0x00);
+}
+
 bool sendPackets(int length, unsigned char* packets){
+    turnOffTRMode();
     if (length < 1 || length > 255)
         return false;
     SPI_WriteReg(52, 0x80, 0x00);   // clear TX_FIFO
@@ -64,16 +69,20 @@ bool sendPackets(int length, unsigned char* packets){
 }
 
 unsigned int receivePackets(){
+    turnOffTRMode();
     SPI_WriteReg(52, 0x00, 0x80);   // clear RX_FIFO
     setRXChannel(RXCHANNEL);
     unsigned int r = 0;
     r = SPI_ReadReg(48);            // pkt_flag
-    if(r & 0x40 == 0)
+    if(r & 0x40 == 0){
+        turnOffTRMode();
         return 0;
+    }
     Serial.println("Packets received.");
 
     if(r & 0x8000){                 // test CRC
         Serial.println("CRC error."); 
+        turnOffTRMode();
         return 0;
     }else{
         Serial.println("CRC correct.");
@@ -97,7 +106,8 @@ unsigned int receivePackets(){
         }
         i += 2;
     }
-    
+
+    turnOffTRMode();
     return lengthTemp;
 }
 
