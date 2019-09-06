@@ -61,7 +61,7 @@ bool sendPackets(int length, unsigned char* packets){
     }
     Serial.println("Packets sent success.");
     r = SPI_ReadReg(52);
-    if(r & 0x3fff == 0){            // ACK received
+    if(r & 0x3f == 0){            // ACK received
         Serial.println("ACK received.");
         return true;
     }
