@@ -3,8 +3,8 @@
 #define RSTPin 2 
 #define CSPin 4
 
-unsigned char TXCHANNEL = 0;
-unsigned char RXCHANNEL = 0;
+unsigned char TXCHANNEL = 30;
+unsigned char RXCHANNEL = 30;
 unsigned char RBUFF[32];
 
 void SPI_WriteReg(unsigned char addr, unsigned char h, unsigned char l){
@@ -72,6 +72,8 @@ unsigned int receivePackets(){
     turnOffTRMode();
     SPI_WriteReg(52, 0x00, 0x80);   // clear RX_FIFO
     setRXChannel(RXCHANNEL);
+    delayMicroseconds(10);
+
     unsigned int r = 0;
     r = SPI_ReadReg(48);            // pkt_flag
     if(r & 0x40 == 0){
@@ -123,7 +125,7 @@ void SPI_Init(){
     SPI_WriteReg(5, 0x66, 0x37);
     SPI_WriteReg(7, 0x00, 0x30);
     SPI_WriteReg(8, 0x6c, 0x90);
-    SPI_WriteReg(9, 0x18, 0x40);
+    SPI_WriteReg(9, 0x48, 0x00);
     SPI_WriteReg(10, 0x7f, 0xfd);
     SPI_WriteReg(11, 0x00, 0x08);
     SPI_WriteReg(12, 0x00, 0x00);
@@ -151,7 +153,6 @@ void SPI_Init(){
     SPI_WriteReg(43, 0x00, 0x0f);
 
     unsigned int r = SPI_ReadReg(40);
-    Serial.println(r);
     if(r == 0x2102)
         Serial.println("Initial success.");
 }
